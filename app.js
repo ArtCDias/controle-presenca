@@ -30,7 +30,7 @@ let expandedIds = new Set();
 let currentDate = new Date();
 let selectedCalDate = null;
 
-// PWA Registration
+// PWA Registration (Apontando para a raiz)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed: ', err));
@@ -121,7 +121,6 @@ btnLogout.addEventListener('click', () => {
   signOut(auth);
 });
 
-// Substitui o antigo loadSubjects (lê do Firestore)
 async function carregarDoFirebase() {
   if (!currentUser) return;
   try {
@@ -140,7 +139,6 @@ async function carregarDoFirebase() {
   }
 }
 
-// Substitui o antigo saveSubjects (escreve no Firestore)
 async function saveSubjects(subs) {
   if (!currentUser) return;
   try {
@@ -352,6 +350,10 @@ document.getElementById('btn-add').addEventListener('click', () => {
   saveSubjects(subjects);
   
   nameEl.value = ''; totalEl.value = ''; limitEl.value = '25';
+  
+  // Esconde o modal de Adicionar Matéria
+  document.getElementById('modal-add-overlay').style.display = 'none';
+
   render();
   if (document.getElementById('tab-calendario').classList.contains('active')) renderCalendar();
   showToast('Matéria adicionada!');
@@ -375,9 +377,14 @@ document.getElementById('grid').addEventListener('click', (e) => {
   render();
 });
 
-const btnMenu = document.getElementById('btn-menu'); const dropdown = document.getElementById('dropdown'); const modalOverlay = document.getElementById('modal-overlay'); const manageList = document.getElementById('manage-list');
+// Menus
+const btnMenu = document.getElementById('btn-menu'); const dropdown = document.getElementById('dropdown');
 btnMenu.addEventListener('click', (e) => { e.stopPropagation(); dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none'; });
 document.addEventListener('click', () => { dropdown.style.display = 'none'; });
+
+// Modal: Gerenciar Matérias
+const modalOverlay = document.getElementById('modal-overlay');
+const manageList = document.getElementById('manage-list');
 
 function renderManageList() {
   if (subjects.length === 0) { manageList.innerHTML = '<div class="manage-empty">Nenhuma matéria cadastrada.</div>'; return; }
@@ -431,7 +438,21 @@ manageList.addEventListener('click', (e) => {
   }
 });
 
-// Backup Export/Import (agora puxa/joga pra nuvem!)
+// Modal: Adicionar Matéria
+const modalAddOverlay = document.getElementById('modal-add-overlay');
+document.getElementById('btn-open-add').addEventListener('click', (e) => {
+  e.stopPropagation();
+  dropdown.style.display = 'none';
+  modalAddOverlay.style.display = 'flex';
+});
+document.getElementById('btn-close-add-modal').addEventListener('click', () => {
+  modalAddOverlay.style.display = 'none';
+});
+modalAddOverlay.addEventListener('click', (e) => {
+  if (e.target === modalAddOverlay) modalAddOverlay.style.display = 'none';
+});
+
+// Backup Export/Import
 document.getElementById('btn-export').addEventListener('click', () => {
   dropdown.style.display = 'none';
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(subjects));
@@ -449,7 +470,7 @@ fileImport.addEventListener('change', (e) => {
       const imported = JSON.parse(evt.target.result);
       if (Array.isArray(imported)) {
         subjects = imported;
-        saveSubjects(subjects); // Envia o backup direto pro banco!
+        saveSubjects(subjects); 
         render();
         if (document.getElementById('tab-calendario').classList.contains('active')) renderCalendar();
         showToast('Backup restaurado com sucesso!');
