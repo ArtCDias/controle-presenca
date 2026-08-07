@@ -15,6 +15,18 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 </head>
 <body>
+  
+<!-- TELA DE LOGIN -->
+<div id="login-screen" class="login-overlay">
+  <div class="login-box card-surface">
+    <h2>Controle de Presença</h2>
+    <p class="subtitle">Faça login para salvar suas matérias na nuvem.</p>
+    <button id="btn-login-google" class="btn-primary" style="width: 100%; margin-top: 24px;">
+      Entrar com Google
+    </button>
+  </div>
+</div>
+  
 <div id="app">
   <header>
     <div class="header-text">
@@ -31,6 +43,8 @@
           <button id="btn-export">Exportar Backup</button>
           <button id="btn-import">Importar Backup</button>
           <input type="file" id="file-import" accept=".json" style="display:none;">
+          <hr class="dropdown-div">
+  <button id="btn-logout" style="color: var(--danger);">Sair da Conta</button>
         </div>
       </div>
     </div>
@@ -110,6 +124,6 @@
 
 <div id="toast-container"></div>
 
-<script src="app.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
