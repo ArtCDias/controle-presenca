@@ -1,0 +1,17 @@
+{
+  "name": "Controle de Presença",
+  "short_name": "Presença",
+  "description": "App para gerenciar faltas e presenças universitárias.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#F5F6FA",
+  "theme_color": "#6D5DF6",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

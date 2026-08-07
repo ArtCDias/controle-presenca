@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Presença" />
+<meta name="theme-color" content="#6D5DF6" />
+<title>Controle de Presença</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="header-text">
+      <h1>Controle de presença</h1>
+      <p class="subtitle">Mínimo de 75% de frequência padrão. Seus dados ficam salvos apenas neste aparelho.</p>
+    </div>
+    <div class="header-actions">
+      <button id="btn-theme" class="btn-icon" aria-label="Alternar tema">🌙</button>
+      <div class="menu-wrap" id="menu-wrap">
+        <button class="btn-menu" id="btn-menu" aria-label="Abrir menu">&#8942;</button>
+        <div class="dropdown" id="dropdown" style="display:none;">
+          <button id="btn-open-materias">Gerenciar Matérias</button>
+          <hr class="dropdown-div">
+          <button id="btn-export">Exportar Backup</button>
+          <button id="btn-import">Importar Backup</button>
+          <input type="file" id="file-import" accept=".json" style="display:none;">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="form-box card-surface">
+    <div class="field name">
+      <label>Matéria</label>
+      <input id="in-name" placeholder="ex.: Cálculo I" />
+    </div>
+    <div class="field">
+      <label>Aulas previstas</label>
+      <input id="in-total" type="number" placeholder="60" />
+    </div>
+    <div class="field">
+      <label>Limite %</label>
+      <input id="in-limit" type="number" value="25" />
+    </div>
+    <button class="btn-primary" id="btn-add">Adicionar</button>
+  </div>
+
+  <div id="error"></div>
+  
+  <div class="filter-bar" id="filter-bar" style="display:none;">
+    <button class="filter-btn active" data-filter="all">Todas</button>
+    <button class="filter-btn" data-filter="active">Cursando</button>
+  </div>
+
+  <div id="empty" style="display:none;">Adicione sua primeira matéria acima</div>
+  <div class="grid" id="grid"></div>
+
+  <div class="footer-note">App modular e offline (PWA)</div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" style="display:none;">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h2>Gerenciar Matérias</h2>
+      <button class="modal-close" id="btn-close-modal" aria-label="Fechar">&times;</button>
+    </div>
+    <div id="manage-list"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
