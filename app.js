@@ -4,7 +4,8 @@ const STORAGE_KEY = 'controle-presenca-subjects-v2';
 // State
 let subjects = loadSubjects();
 let expandedIds = new Set();
-let currentFilter = 'all'; 
+let currentDate = new Date();
+let selectedCalDate = null; // Para manter o dia selecionado no calendário
 
 // PWA Registration
 if ('serviceWorker' in navigator) {
@@ -25,9 +26,30 @@ if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
 
 themeBtn.addEventListener('click', () => {
   const isDark = document.body.classList.toggle('dark-theme');
-  document.body.classList.toggle('light-theme', !isDark); // Override media query
+  document.body.classList.toggle('light-theme', !isDark);
   themeBtn.textContent = isDark ? '☀️' : '🌙';
   localStorage.setItem('theme', isDark ? 'dark' : 'light');
+});
+
+// Tab Handling
+const tabBtns = document.querySelectorAll('.tab-btn');
+const tabContents = document.querySelectorAll('.tab-content');
+
+tabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    // Remove active
+    tabBtns.forEach(b => b.classList.remove('active'));
+    tabContents.forEach(c => c.classList.remove('active'));
+    
+    // Add active
+    btn.classList.add('active');
+    document.getElementById(btn.getAttribute('data-tab')).classList.add('active');
+    
+    // Se clicou na aba do calendário, renderiza ele
+    if (btn.getAttribute('data-tab') === 'tab-calendario') {
+      renderCalendar();
+    }
+  });
 });
 
 // Toast Notifications
@@ -38,7 +60,6 @@ function showToast(message, type = 'success') {
   toast.textContent = message;
   container.appendChild(toast);
   
-  // Trigger reflow to animate
   void toast.offsetWidth;
   toast.classList.add('show');
   
@@ -68,7 +89,7 @@ function saveSubjects(subs) {
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
-// Math & Rendering
+// Math & Rendering (Matérias)
 function computeStats(s) {
   const total = Math.max(0, Number(s.totalClasses) || 0);
   const limitPct = Math.max(1, Math.min(100, Number(s.limitPercent) || 25));
@@ -192,6 +213,131 @@ function render() {
   }).join('');
 }
 
+// ==========================================
+// CALENDÁRIO LOGIC
+// ==========================================
+const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+function renderCalendar() {
+  const monthYearLabel = document.getElementById('calendar-month-year');
+  const daysContainer = document.getElementById('calendar-days');
+  const detailsBox = document.getElementById('day-details');
+  
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  
+  monthYearLabel.textContent = `${monthNames[month]} ${year}`;
+  
+  // Mapear logs por data "YYYY-MM-DD"
+  const logsByDate = {};
+  subjects.forEach(sub => {
+    sub.log.forEach(entry => {
+      const d = new Date(entry.date);
+      // Extrair local time para evitar conflito de timezone
+      const dateKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      if (!logsByDate[dateKey]) logsByDate[dateKey] = [];
+      logsByDate[dateKey].push({ subject: sub.name, status: entry.status, time: entry.date });
+    });
+  });
+
+  daysContainer.innerHTML = '';
+  
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  // Células vazias (dias do mês anterior na primeira semana)
+  for (let i = 0; i < firstDayIndex; i++) {
+    const emptyCell = document.createElement('div');
+    emptyCell.className = 'cal-cell empty';
+    daysContainer.appendChild(emptyCell);
+  }
+
+  // Dias do mês atual
+  for (let i = 1; i <= daysInMonth; i++) {
+    const cell = document.createElement('div');
+    const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+    
+    cell.className = 'cal-cell';
+    if (dateKey === todayKey) cell.classList.add('today');
+    if (dateKey === selectedCalDate) cell.classList.add('selected');
+    
+    cell.textContent = i;
+    cell.setAttribute('data-date', dateKey);
+    
+    // Adicionar pontinhos de log
+    if (logsByDate[dateKey]) {
+      const dotsContainer = document.createElement('div');
+      dotsContainer.className = 'cal-dots';
+      
+      const maxDots = 3;
+      const logs = logsByDate[dateKey];
+      for (let j = 0; j < Math.min(logs.length, maxDots); j++) {
+        const dot = document.createElement('div');
+        dot.className = `cal-dot ${logs[j].status}`;
+        dotsContainer.appendChild(dot);
+      }
+      if (logs.length > maxDots) {
+        const dotMore = document.createElement('div');
+        dotMore.className = 'cal-dot more';
+        dotsContainer.appendChild(dotMore);
+      }
+      cell.appendChild(dotsContainer);
+    }
+    
+    cell.addEventListener('click', () => {
+      document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('selected'));
+      cell.classList.add('selected');
+      selectedCalDate = dateKey;
+      showDayDetails(dateKey, logsByDate[dateKey]);
+    });
+
+    daysContainer.appendChild(cell);
+  }
+}
+
+function showDayDetails(dateKey, logs) {
+  const detailsBox = document.getElementById('day-details');
+  const detailsTitle = document.getElementById('day-details-title');
+  const detailsList = document.getElementById('day-details-list');
+  
+  // Format Title
+  const [y, m, d] = dateKey.split('-');
+  const dateObj = new Date(y, m-1, d);
+  detailsTitle.textContent = dateObj.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  
+  if (!logs || logs.length === 0) {
+    detailsList.innerHTML = '<div class="detail-empty">Nenhum registro neste dia.</div>';
+  } else {
+    detailsList.innerHTML = logs.map(log => {
+      const timeStr = new Date(log.time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' });
+      const icon = log.status === 'falta' ? '✕' : '✓';
+      return `
+        <div class="detail-item">
+          <div class="detail-status ${log.status}">${icon}</div>
+          <div class="detail-info">
+            <b>${escapeHTML(log.subject)}</b>
+            <span>${log.status === 'falta' ? 'Falta' : 'Presença'} &middot; às ${timeStr}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  
+  detailsBox.style.display = 'block';
+}
+
+document.getElementById('btn-prev-month').addEventListener('click', () => {
+  currentDate.setMonth(currentDate.getMonth() - 1);
+  renderCalendar();
+});
+document.getElementById('btn-next-month').addEventListener('click', () => {
+  currentDate.setMonth(currentDate.getMonth() + 1);
+  renderCalendar();
+});
+// ==========================================
+
 // Add form
 document.getElementById('btn-add').addEventListener('click', () => {
   const nameEl = document.getElementById('in-name');
@@ -212,10 +358,11 @@ document.getElementById('btn-add').addEventListener('click', () => {
   
   nameEl.value = ''; totalEl.value = ''; limitEl.value = '25';
   render();
+  if (document.getElementById('tab-calendario').classList.contains('active')) renderCalendar();
   showToast('Matéria adicionada!');
 });
 
-// Card actions
+// Card actions (Presença, Falta, Desfazer)
 document.getElementById('grid').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
@@ -323,6 +470,7 @@ manageList.addEventListener('click', (e) => {
     saveSubjects(subjects);
     renderManageList();
     render();
+    if (document.getElementById('tab-calendario').classList.contains('active')) renderCalendar();
     showToast('Matéria excluída');
   } 
   else if (action === 'edit-subject') {
@@ -343,6 +491,7 @@ manageList.addEventListener('click', (e) => {
       saveSubjects(subjects);
       renderManageList();
       render();
+      if (document.getElementById('tab-calendario').classList.contains('active')) renderCalendar();
       showToast('Matéria atualizada!');
     }
   }
@@ -382,6 +531,7 @@ fileImport.addEventListener('change', (e) => {
         subjects = imported;
         saveSubjects(subjects);
         render();
+        if (document.getElementById('tab-calendario').classList.contains('active')) renderCalendar();
         showToast('Backup restaurado com sucesso!');
       } else {
         showToast('Formato de arquivo inválido', 'error');
@@ -389,10 +539,10 @@ fileImport.addEventListener('change', (e) => {
     } catch(err) {
       showToast('Erro ao ler o arquivo', 'error');
     }
-    // reset input
     fileImport.value = '';
   };
   reader.readAsText(file);
 });
 
+// Inicialização
 render();
