@@ -30,7 +30,7 @@ let expandedIds = new Set();
 let currentDate = new Date();
 let selectedCalDate = null;
 
-// PWA Registration (Apontando para a raiz)
+// PWA Registration
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed: ', err));
@@ -163,6 +163,9 @@ function computeStats(s) {
   const pctAusencia = total > 0 ? (faltas / total) * 100 : 0;
   const pctDoLimite = limiteFaltas > 0 ? (faltas / limiteFaltas) * 100 : (faltas > 0 ? 100 : 0);
   
+  // Porcentagem de progresso (aulas dadas em relação ao total previsto)
+  const pctProgresso = total > 0 ? (dadas / total) * 100 : 0;
+  
   let nivel = 'seguro'; let statusLabel = 'Regular';
   if (limiteFaltas > 0) {
     const razao = faltas / limiteFaltas;
@@ -172,7 +175,8 @@ function computeStats(s) {
   } else if (faltas > 0) {
     nivel = 'reprovado'; statusLabel = 'Reprovado por falta';
   }
-  return { total, limitPct, faltas, dadas, limiteFaltas, restantes, pctAusencia, pctDoLimite, nivel, statusLabel };
+  
+  return { total, limitPct, faltas, dadas, limiteFaltas, restantes, pctAusencia, pctDoLimite, pctProgresso, nivel, statusLabel };
 }
 
 const NIVEL_COLOR_VAR = { seguro: 'var(--success)', atencao: 'var(--warning)', perigo: 'var(--danger)', reprovado: 'var(--danger)' };
@@ -227,9 +231,10 @@ function render() {
     const colorVar = NIVEL_COLOR_VAR[stats.nivel];
     const restanteTxt = stats.limiteFaltas > 0 ? (stats.restantes >= 0 ? `pode faltar mais <b>${stats.restantes}</b>` : `<b style="color:var(--danger)">excedeu em ${Math.abs(stats.restantes)}</b>`) : '';
       
+    // Aqui usamos stats.pctProgresso no ringSVG e no texto do círculo
     return `<div class="card card-surface" data-id="${s.id}">
         <div class="card-top">
-          <div class="ring-wrap">${ringSVG(stats.pctDoLimite, colorVar)}<div class="ring-pct" style="color:${colorVar}">${Math.round(stats.pctDoLimite)}%</div></div>
+          <div class="ring-wrap">${ringSVG(stats.pctProgresso, colorVar)}<div class="ring-pct" style="color:${colorVar}">${Math.round(stats.pctProgresso)}%</div></div>
           <div><h3>${escapeHTML(s.name)}</h3><div class="subline">${stats.dadas} de ${stats.total} aulas</div></div>
         </div>
         <span class="badge ${stats.nivel}">${stats.statusLabel}</span>
