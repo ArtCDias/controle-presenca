@@ -49,13 +49,21 @@ body.dark-theme {
 }
 
 * { box-sizing: border-box; }
-html, body {
-  margin: 0; padding: 0; background: var(--bg);
-  font-family: 'Inter', -apple-system, sans-serif;
-  -webkit-tap-highlight-color: transparent; color: var(--text-primary);
-  transition: background-color 0.3s ease;
+html {
+  margin: 0; 
+  padding: 0;
 }
-body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+
+body {
+  margin: 0; 
+  background: var(--bg);
+  font-family: 'Inter', -apple-system, sans-serif;
+  -webkit-tap-highlight-color: transparent; 
+  color: var(--text-primary);
+  transition: background-color 0.3s ease;
+  min-height: 100vh; /* Aqui está a mágica que empurra o fundo até o final */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
 #app { max-width: 720px; margin: 0 auto; padding: 28px 16px 48px 16px; }
 
 header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
