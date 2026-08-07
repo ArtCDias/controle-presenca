@@ -11,7 +11,7 @@
 <title>Controle de Presença</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="css/style.css">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 </head>
 <body>
@@ -36,35 +36,68 @@
     </div>
   </header>
 
-  <div class="form-box card-surface">
-    <div class="field name">
-      <label>Matéria</label>
-      <input id="in-name" placeholder="ex.: Cálculo I" />
-    </div>
-    <div class="field">
-      <label>Aulas previstas</label>
-      <input id="in-total" type="number" placeholder="60" />
-    </div>
-    <div class="field">
-      <label>Limite %</label>
-      <input id="in-limit" type="number" value="25" />
-    </div>
-    <button class="btn-primary" id="btn-add">Adicionar</button>
+  <!-- Sistema de Abas -->
+  <div class="tabs-container">
+    <button class="tab-btn active" data-tab="tab-materias">Matérias</button>
+    <button class="tab-btn" data-tab="tab-calendario">Calendário</button>
   </div>
 
-  <div id="error"></div>
-  
-  <div class="filter-bar" id="filter-bar" style="display:none;">
-    <button class="filter-btn active" data-filter="all">Todas</button>
-    <button class="filter-btn" data-filter="active">Cursando</button>
+  <!-- ABA: MATÉRIAS -->
+  <div id="tab-materias" class="tab-content active">
+    <div class="form-box card-surface">
+      <div class="field name">
+        <label>Matéria</label>
+        <input id="in-name" placeholder="ex.: Cálculo I" />
+      </div>
+      <div class="field">
+        <label>Aulas previstas</label>
+        <input id="in-total" type="number" placeholder="60" />
+      </div>
+      <div class="field">
+        <label>Limite %</label>
+        <input id="in-limit" type="number" value="25" />
+      </div>
+      <button class="btn-primary" id="btn-add">Adicionar</button>
+    </div>
+
+    <div id="error"></div>
+    <div id="empty" style="display:none;">Adicione sua primeira matéria acima</div>
+    <div class="grid" id="grid"></div>
   </div>
 
-  <div id="empty" style="display:none;">Adicione sua primeira matéria acima</div>
-  <div class="grid" id="grid"></div>
+  <!-- ABA: CALENDÁRIO -->
+  <div id="tab-calendario" class="tab-content">
+    <div class="card-surface calendar-container">
+      <div class="calendar-header">
+        <button id="btn-prev-month" class="btn-icon">&lt;</button>
+        <h2 id="calendar-month-year">...</h2>
+        <button id="btn-next-month" class="btn-icon">&gt;</button>
+      </div>
+      <div class="calendar-grid">
+        <!-- Dias da semana -->
+        <div class="cal-weekday">Dom</div>
+        <div class="cal-weekday">Seg</div>
+        <div class="cal-weekday">Ter</div>
+        <div class="cal-weekday">Qua</div>
+        <div class="cal-weekday">Qui</div>
+        <div class="cal-weekday">Sex</div>
+        <div class="cal-weekday">Sáb</div>
+        <!-- Os dias serão gerados via JS -->
+      </div>
+      <div id="calendar-days" class="calendar-grid-days"></div>
+    </div>
+
+    <!-- Detalhes do dia selecionado -->
+    <div id="day-details" class="card-surface day-details" style="display:none;">
+      <h3 id="day-details-title">Detalhes do Dia</h3>
+      <div id="day-details-list"></div>
+    </div>
+  </div>
 
   <div class="footer-note">App modular e offline (PWA)</div>
 </div>
 
+<!-- Modal Gerenciar Matérias -->
 <div class="modal-overlay" id="modal-overlay" style="display:none;">
   <div class="modal-panel">
     <div class="modal-header">
@@ -77,6 +110,6 @@
 
 <div id="toast-container"></div>
 
-<script src="app.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
