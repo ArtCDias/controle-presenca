@@ -3,8 +3,8 @@ const CACHE_NAME = 'presenca-v2';
 const ASSETS = [
   '/',
   '/index.html',
-  '/css/style.css',
-  '/js/app.js',
+  '/style.css',
+  '/app.js',
   '/manifest.json',
   '/icon.svg',
   'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap'
