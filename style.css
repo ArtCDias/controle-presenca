@@ -213,3 +213,14 @@ button:active { transform: scale(0.96); }
 .toast { background: var(--text-primary); color: var(--surface); padding: 12px 20px; border-radius: 99px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transform: translateY(20px); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 .toast.show { opacity: 1; transform: translateY(0); }
 .toast.error { background: var(--danger); }
+
+/* TELA DE LOGIN */
+.login-overlay {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; /* Fica acima de tudo no app */
+}
+.login-box {
+  padding: 32px 24px; text-align: center; max-width: 320px; width: 100%;
+}
+.login-box h2 { font-family: 'Space Grotesk', sans-serif; margin: 0 0 8px 0; }
