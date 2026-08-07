@@ -4,12 +4,13 @@ import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signO
 
 // SUAS CHAVES DO FIREBASE IRÃO AQUI DENTRO!
 const firebaseConfig = {
-  apiKey: "COLE_AQUI",
-  authDomain: "COLE_AQUI",
-  projectId: "COLE_AQUI",
-  storageBucket: "COLE_AQUI",
-  messagingSenderId: "COLE_AQUI",
-  appId: "COLE_AQUI"
+  apiKey: "AIzaSyBKgqpp7QlIsGopXvstXOQn01v6LvOxqLg",
+  authDomain: "controle-presenca-app.firebaseapp.com",
+  projectId: "controle-presenca-app",
+  storageBucket: "controle-presenca-app.firebasestorage.app",
+  messagingSenderId: "140312143617",
+  appId: "1:140312143617:web:80ad2fdfd0d532e916dd00",
+  measurementId: "G-K7TDGBZKJK"
 };
 
 // Inicializa o Firebase
