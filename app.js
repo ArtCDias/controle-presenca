@@ -1,3 +1,66 @@
+// Importações do Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+// SUAS CHAVES DO FIREBASE IRÃO AQUI DENTRO!
+const firebaseConfig = {
+  apiKey: "COLE_AQUI",
+  authDomain: "COLE_AQUI",
+  projectId: "COLE_AQUI",
+  storageBucket: "COLE_AQUI",
+  messagingSenderId: "COLE_AQUI",
+  appId: "COLE_AQUI"
+};
+
+// Inicializa o Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// Elementos da UI
+const loginScreen = document.getElementById('login-screen');
+const mainApp = document.getElementById('app');
+const btnLoginGoogle = document.getElementById('btn-login-google');
+const btnLogout = document.getElementById('btn-logout');
+
+// O "Ouvinte" Mágico de Autenticação
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // USUÁRIO ESTÁ LOGADO
+    loginScreen.style.display = 'none'; // Esconde tela de login
+    mainApp.style.display = 'block';    // Mostra o app
+    console.log("Logado como:", user.email);
+    
+    // Depois vamos chamar a função aqui para buscar as matérias dele!
+  } else {
+    // USUÁRIO DESLOGADO
+    loginScreen.style.display = 'flex';
+    mainApp.style.display = 'none';
+  }
+});
+
+// Ação de Login
+btnLoginGoogle.addEventListener('click', () => {
+  signInWithPopup(auth, provider)
+    .then((result) => {
+      showToast('Login realizado com sucesso!');
+    })
+    .catch((error) => {
+      console.error(error);
+      showToast('Erro ao fazer login', 'error');
+    });
+});
+
+// Ação de Logout
+btnLogout.addEventListener('click', () => {
+  signOut(auth).then(() => {
+    showToast('Você saiu da conta.');
+    // Como deslogou, recarregamos as matérias locais vazias só para limpar a tela
+    subjects = []; 
+    render();
+  });
+});
+
 
 const STORAGE_KEY = 'controle-presenca-subjects-v2';
 
