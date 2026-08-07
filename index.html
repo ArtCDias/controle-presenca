@@ -11,11 +11,12 @@
 <title>Controle de Presença</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+<!-- Arquivo CSS apontando para a raiz -->
 <link rel="stylesheet" href="style.css">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 </head>
 <body>
-  
+
 <!-- TELA DE LOGIN -->
 <div id="login-screen" class="login-overlay">
   <div class="login-box card-surface">
@@ -26,25 +27,27 @@
     </button>
   </div>
 </div>
-  
-<div id="app">
+
+<!-- APLICATIVO PRINCIPAL -->
+<div id="app" style="display:none;">
   <header>
     <div class="header-text">
       <h1>Controle de presença</h1>
-      <p class="subtitle">Mínimo de 75% de frequência padrão. Seus dados ficam salvos apenas neste aparelho.</p>
+      <p class="subtitle">Mínimo de 75% de frequência padrão. Seus dados ficam salvos na nuvem.</p>
     </div>
     <div class="header-actions">
       <button id="btn-theme" class="btn-icon" aria-label="Alternar tema">🌙</button>
       <div class="menu-wrap" id="menu-wrap">
         <button class="btn-menu" id="btn-menu" aria-label="Abrir menu">&#8942;</button>
         <div class="dropdown" id="dropdown" style="display:none;">
+          <button id="btn-open-add">+ Nova Matéria</button>
           <button id="btn-open-materias">Gerenciar Matérias</button>
           <hr class="dropdown-div">
           <button id="btn-export">Exportar Backup</button>
           <button id="btn-import">Importar Backup</button>
           <input type="file" id="file-import" accept=".json" style="display:none;">
           <hr class="dropdown-div">
-  <button id="btn-logout" style="color: var(--danger);">Sair da Conta</button>
+          <button id="btn-logout" style="color: var(--danger);">Sair da Conta</button>
         </div>
       </div>
     </div>
@@ -58,24 +61,7 @@
 
   <!-- ABA: MATÉRIAS -->
   <div id="tab-materias" class="tab-content active">
-    <div class="form-box card-surface">
-      <div class="field name">
-        <label>Matéria</label>
-        <input id="in-name" placeholder="ex.: Cálculo I" />
-      </div>
-      <div class="field">
-        <label>Aulas previstas</label>
-        <input id="in-total" type="number" placeholder="60" />
-      </div>
-      <div class="field">
-        <label>Limite %</label>
-        <input id="in-limit" type="number" value="25" />
-      </div>
-      <button class="btn-primary" id="btn-add">Adicionar</button>
-    </div>
-
-    <div id="error"></div>
-    <div id="empty" style="display:none;">Adicione sua primeira matéria acima</div>
+    <div id="empty" style="display:none;">Adicione sua primeira matéria no menu (⋮)</div>
     <div class="grid" id="grid"></div>
   </div>
 
@@ -88,27 +74,49 @@
         <button id="btn-next-month" class="btn-icon">&gt;</button>
       </div>
       <div class="calendar-grid">
-        <!-- Dias da semana -->
-        <div class="cal-weekday">Dom</div>
-        <div class="cal-weekday">Seg</div>
-        <div class="cal-weekday">Ter</div>
-        <div class="cal-weekday">Qua</div>
-        <div class="cal-weekday">Qui</div>
-        <div class="cal-weekday">Sex</div>
+        <div class="cal-weekday">Dom</div><div class="cal-weekday">Seg</div>
+        <div class="cal-weekday">Ter</div><div class="cal-weekday">Qua</div>
+        <div class="cal-weekday">Qui</div><div class="cal-weekday">Sex</div>
         <div class="cal-weekday">Sáb</div>
-        <!-- Os dias serão gerados via JS -->
       </div>
       <div id="calendar-days" class="calendar-grid-days"></div>
     </div>
 
-    <!-- Detalhes do dia selecionado -->
     <div id="day-details" class="card-surface day-details" style="display:none;">
       <h3 id="day-details-title">Detalhes do Dia</h3>
       <div id="day-details-list"></div>
     </div>
   </div>
 
-  <div class="footer-note">App modular e offline (PWA)</div>
+  <div class="footer-note">App modular e online (PWA + Firebase)</div>
+</div>
+
+<!-- Modal Adicionar Matéria -->
+<div class="modal-overlay" id="modal-add-overlay" style="display:none;">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h2>Nova Matéria</h2>
+      <button class="modal-close" id="btn-close-add-modal" aria-label="Fechar">&times;</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div class="field name">
+        <label>Matéria</label>
+        <input id="in-name" placeholder="ex.: Cálculo I" />
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <div class="field" style="flex: 1;">
+          <label>Aulas previstas</label>
+          <input id="in-total" type="number" placeholder="60" />
+        </div>
+        <div class="field" style="flex: 1;">
+          <label>Limite %</label>
+          <input id="in-limit" type="number" value="25" />
+        </div>
+      </div>
+      <div id="error"></div>
+      <button class="btn-primary" id="btn-add" style="width: 100%; margin-top: 8px;">Adicionar</button>
+    </div>
+  </div>
 </div>
 
 <!-- Modal Gerenciar Matérias -->
@@ -124,6 +132,7 @@
 
 <div id="toast-container"></div>
 
+<!-- Arquivo JS apontando para a raiz com type module -->
 <script type="module" src="app.js"></script>
 </body>
 </html>
