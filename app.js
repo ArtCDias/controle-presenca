@@ -66,7 +66,10 @@ tabBtns.forEach(btn => {
     tabContents.forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(btn.getAttribute('data-tab')).classList.add('active');
+    
+    // Atualiza views se necessário
     if (btn.getAttribute('data-tab') === 'tab-calendario') renderCalendar();
+    if (btn.getAttribute('data-tab') === 'tab-cronograma') renderCronograma();
   });
 });
 
@@ -128,11 +131,15 @@ async function carregarDoFirebase() {
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       subjects = docSnap.data().subjects || [];
+      // Atualiza matérias velhas que não tenham a array de schedule
+      subjects.forEach(s => { if(!s.schedule) s.schedule = []; });
     } else {
       subjects = [];
     }
+    
     render();
     if (document.getElementById('tab-calendario').classList.contains('active')) renderCalendar();
+    if (document.getElementById('tab-cronograma').classList.contains('active')) renderCronograma();
   } catch (e) {
     console.error("Erro ao carregar:", e);
     showToast('Erro ao carregar dados', 'error');
@@ -151,7 +158,7 @@ async function saveSubjects(subs) {
 }
 
 // ==========================================
-// 5. RENDERIZAÇÃO E MATEMÁTICA
+// 5. RENDERIZAÇÃO MATÉRIAS (E Matemática)
 // ==========================================
 function computeStats(s) {
   const total = Math.max(0, Number(s.totalClasses) || 0);
@@ -231,7 +238,6 @@ function render() {
     const colorVar = NIVEL_COLOR_VAR[stats.nivel];
     const restanteTxt = stats.limiteFaltas > 0 ? (stats.restantes >= 0 ? `pode faltar mais <b>${stats.restantes}</b>` : `<b style="color:var(--danger)">excedeu em ${Math.abs(stats.restantes)}</b>`) : '';
       
-    // Aqui usamos stats.pctProgresso no ringSVG e no texto do círculo
     return `<div class="card card-surface" data-id="${s.id}">
         <div class="card-top">
           <div class="ring-wrap">${ringSVG(stats.pctProgresso, colorVar)}<div class="ring-pct" style="color:${colorVar}">${Math.round(stats.pctProgresso)}%</div></div>
@@ -251,7 +257,114 @@ function render() {
 }
 
 // ==========================================
-// 6. CALENDÁRIO LOGIC
+// 6. ABA DE CRONOGRAMA
+// ==========================================
+function renderCronograma() {
+  const select = document.getElementById('crono-subject');
+  const listContainer = document.getElementById('crono-list');
+  
+  // Popula o dropdown de seleção
+  if(subjects.length === 0) {
+    select.innerHTML = '<option value="">Nenhuma matéria cadastrada...</option>';
+    listContainer.innerHTML = '<div class="detail-empty">Nenhum evento agendado.</div>';
+    return;
+  }
+  
+  select.innerHTML = subjects.map(s => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join('');
+  
+  // Reúne todos os eventos futuros de todas as matérias
+  let allEvents = [];
+  subjects.forEach(sub => {
+    if(sub.schedule) {
+      sub.schedule.forEach(ev => {
+        allEvents.push({ ...ev, subjectId: sub.id, subjectName: sub.name });
+      });
+    }
+  });
+  
+  // Ordena por data (crescente)
+  allEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+  
+  // Filtra apenas eventos do dia atual em diante
+  const todayStr = new Date().toISOString().split('T')[0];
+  const upcoming = allEvents.filter(e => e.date >= todayStr);
+
+  if(upcoming.length === 0) {
+    listContainer.innerHTML = '<div class="detail-empty">Nenhum evento próximo agendado.</div>';
+    return;
+  }
+
+  // Gera a lista visual
+  listContainer.innerHTML = upcoming.map(ev => {
+    // Organiza as cores do status
+    let iconStr = 'T'; let cls = 'topico';
+    if(ev.type === 'prova') { iconStr = '!'; cls = 'prova'; }
+    if(ev.type === 'trabalho') { iconStr = '★'; cls = 'trabalho'; }
+    
+    // Converte a data para um formato legal
+    const [y, m, d] = ev.date.split('-');
+    const dateLabel = new Date(y, m-1, d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+
+    return `
+      <div class="crono-card">
+        <div class="detail-status ${cls}">${iconStr}</div>
+        <div class="detail-info">
+          <b>${escapeHTML(ev.title)}</b>
+          <span>${escapeHTML(ev.subjectName)} &middot; ${dateLabel}</span>
+        </div>
+        <button class="btn-del-crono" data-sub="${ev.subjectId}" data-evid="${ev.id}">Apagar</button>
+      </div>
+    `;
+  }).join('');
+}
+
+// Botão: Salvar no Cronograma
+document.getElementById('btn-add-crono').addEventListener('click', () => {
+  const subId = document.getElementById('crono-subject').value;
+  const dateVal = document.getElementById('crono-date').value;
+  const typeVal = document.getElementById('crono-type').value;
+  const titleVal = document.getElementById('crono-title').value.trim();
+  const errEl = document.getElementById('crono-error');
+
+  if(!subId) { errEl.textContent = 'Cadastre uma matéria primeiro.'; return; }
+  if(!dateVal) { errEl.textContent = 'Escolha uma data para o evento.'; return; }
+  if(!titleVal) { errEl.textContent = 'Dê um título ao evento (ex: Prova 1).'; return; }
+
+  errEl.textContent = '';
+  
+  const subject = subjects.find(s => s.id === subId);
+  if(subject) {
+    if(!subject.schedule) subject.schedule = [];
+    subject.schedule.push({ id: uid(), date: dateVal, type: typeVal, title: titleVal });
+    saveSubjects(subjects);
+    
+    // Limpa os campos
+    document.getElementById('crono-title').value = '';
+    
+    showToast('Evento agendado com sucesso!');
+    renderCronograma();
+    if(document.getElementById('tab-calendario').classList.contains('active')) renderCalendar();
+  }
+});
+
+// Botão: Apagar do Cronograma
+document.getElementById('crono-list').addEventListener('click', (e) => {
+  if (e.target.classList.contains('btn-del-crono')) {
+    const subId = e.target.getAttribute('data-sub');
+    const evId = e.target.getAttribute('data-evid');
+    
+    const subject = subjects.find(s => s.id === subId);
+    if(subject && subject.schedule) {
+      subject.schedule = subject.schedule.filter(ev => ev.id !== evId);
+      saveSubjects(subjects);
+      renderCronograma();
+      showToast('Evento apagado.');
+    }
+  }
+});
+
+// ==========================================
+// 7. CALENDÁRIO LOGIC (Com Integração)
 // ==========================================
 const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -262,14 +375,26 @@ function renderCalendar() {
   const month = currentDate.getMonth();
   monthYearLabel.textContent = `${monthNames[month]} ${year}`;
   
-  const logsByDate = {};
+  // Dicionário gigante agrupando LOGS e EVENTOS DO CRONOGRAMA por dia
+  const eventsByDate = {};
+  
   subjects.forEach(sub => {
+    // 1. Logs de Presença/Falta
     sub.log.forEach(entry => {
       const d = new Date(entry.date);
       const dateKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      if (!logsByDate[dateKey]) logsByDate[dateKey] = [];
-      logsByDate[dateKey].push({ subject: sub.name, status: entry.status, time: entry.date });
+      if (!eventsByDate[dateKey]) eventsByDate[dateKey] = [];
+      eventsByDate[dateKey].push({ source: 'log', subject: sub.name, status: entry.status, time: entry.date });
     });
+
+    // 2. Eventos do Cronograma (Provas, Trabalhos)
+    if(sub.schedule) {
+      sub.schedule.forEach(ev => {
+        // Date input is YYYY-MM-DD
+        if (!eventsByDate[ev.date]) eventsByDate[ev.date] = [];
+        eventsByDate[ev.date].push({ source: 'schedule', subject: sub.name, type: ev.type, title: ev.title });
+      });
+    }
   });
 
   daysContainer.innerHTML = '';
@@ -293,13 +418,25 @@ function renderCalendar() {
     cell.textContent = i;
     cell.setAttribute('data-date', dateKey);
     
-    if (logsByDate[dateKey]) {
+    if (eventsByDate[dateKey]) {
       const dotsContainer = document.createElement('div'); dotsContainer.className = 'cal-dots';
-      const logs = logsByDate[dateKey];
-      for (let j = 0; j < Math.min(logs.length, 3); j++) {
-        const dot = document.createElement('div'); dot.className = `cal-dot ${logs[j].status}`; dotsContainer.appendChild(dot);
+      const dayItems = eventsByDate[dateKey];
+      
+      // Limite visual: Mostra 3 pontinhos no máximo no calendário
+      for (let j = 0; j < Math.min(dayItems.length, 3); j++) {
+        const dot = document.createElement('div'); 
+        
+        // Pinta a bolinha dependendo do que for
+        if (dayItems[j].source === 'log') {
+          dot.className = `cal-dot ${dayItems[j].status}`; // presente ou falta
+        } else {
+          dot.className = `cal-dot ${dayItems[j].type}`; // prova, trabalho, topico
+        }
+        
+        dotsContainer.appendChild(dot);
       }
-      if (logs.length > 3) {
+      // Se houver mais de 3 eventos no mesmo dia, exibe um ponto cinza "mais"
+      if (dayItems.length > 3) {
         const dotMore = document.createElement('div'); dotMore.className = 'cal-dot more'; dotsContainer.appendChild(dotMore);
       }
       cell.appendChild(dotsContainer);
@@ -309,13 +446,13 @@ function renderCalendar() {
       document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('selected'));
       cell.classList.add('selected');
       selectedCalDate = dateKey;
-      showDayDetails(dateKey, logsByDate[dateKey]);
+      showDayDetails(dateKey, eventsByDate[dateKey]);
     });
     daysContainer.appendChild(cell);
   }
 }
 
-function showDayDetails(dateKey, logs) {
+function showDayDetails(dateKey, dayItems) {
   const detailsBox = document.getElementById('day-details');
   const detailsTitle = document.getElementById('day-details-title');
   const detailsList = document.getElementById('day-details-list');
@@ -323,13 +460,21 @@ function showDayDetails(dateKey, logs) {
   const dateObj = new Date(y, m-1, d);
   detailsTitle.textContent = dateObj.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   
-  if (!logs || logs.length === 0) {
-    detailsList.innerHTML = '<div class="detail-empty">Nenhum registro neste dia.</div>';
+  if (!dayItems || dayItems.length === 0) {
+    detailsList.innerHTML = '<div class="detail-empty">Nenhum evento ou registro.</div>';
   } else {
-    detailsList.innerHTML = logs.map(log => {
-      const timeStr = new Date(log.time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' });
-      const icon = log.status === 'falta' ? '✕' : '✓';
-      return `<div class="detail-item"><div class="detail-status ${log.status}">${icon}</div><div class="detail-info"><b>${escapeHTML(log.subject)}</b><span>${log.status === 'falta' ? 'Falta' : 'Presença'} &middot; às ${timeStr}</span></div></div>`;
+    detailsList.innerHTML = dayItems.map(item => {
+      if (item.source === 'log') {
+        const timeStr = new Date(item.time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' });
+        const icon = item.status === 'falta' ? '✕' : '✓';
+        return `<div class="detail-item"><div class="detail-status ${item.status}">${icon}</div><div class="detail-info"><b>${escapeHTML(item.subject)}</b><span>${item.status === 'falta' ? 'Falta' : 'Presença'} &middot; às ${timeStr}</span></div></div>`;
+      } else {
+        // É do Cronograma
+        let icon = 'T'; let cls = 'topico'; let typeLabel = 'Tópico de Aula';
+        if (item.type === 'prova') { icon = '!'; cls = 'prova'; typeLabel = 'Avaliação'; }
+        if (item.type === 'trabalho') { icon = '★'; cls = 'trabalho'; typeLabel = 'Trabalho'; }
+        return `<div class="detail-item"><div class="detail-status ${cls}">${icon}</div><div class="detail-info"><b>${escapeHTML(item.title)}</b><span>${escapeHTML(item.subject)} &middot; ${typeLabel}</span></div></div>`;
+      }
     }).join('');
   }
   detailsBox.style.display = 'block';
@@ -339,7 +484,7 @@ document.getElementById('btn-prev-month').addEventListener('click', () => { curr
 document.getElementById('btn-next-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
 
 // ==========================================
-// 7. EVENTOS E CRUD
+// 8. CRUD E MENUS (Matérias)
 // ==========================================
 document.getElementById('btn-add').addEventListener('click', () => {
   const nameEl = document.getElementById('in-name'); const totalEl = document.getElementById('in-total'); const limitEl = document.getElementById('in-limit'); const errEl = document.getElementById('error');
@@ -349,14 +494,12 @@ document.getElementById('btn-add').addEventListener('click', () => {
   if (!total || total <= 0) { errEl.textContent = 'Informe o número total de aulas previstas.'; return; }
 
   errEl.textContent = '';
-  subjects.push({ id: uid(), name, totalClasses: total, limitPercent: limit, log: [] });
+  // Inicializando a nova estrutura "schedule" na criação
+  subjects.push({ id: uid(), name, totalClasses: total, limitPercent: limit, log: [], schedule: [] });
   
-  // Salva no Firestore
   saveSubjects(subjects);
   
   nameEl.value = ''; totalEl.value = ''; limitEl.value = '25';
-  
-  // Esconde o modal de Adicionar Matéria
   document.getElementById('modal-add-overlay').style.display = 'none';
 
   render();
@@ -446,16 +589,10 @@ manageList.addEventListener('click', (e) => {
 // Modal: Adicionar Matéria
 const modalAddOverlay = document.getElementById('modal-add-overlay');
 document.getElementById('btn-open-add').addEventListener('click', (e) => {
-  e.stopPropagation();
-  dropdown.style.display = 'none';
-  modalAddOverlay.style.display = 'flex';
+  e.stopPropagation(); dropdown.style.display = 'none'; modalAddOverlay.style.display = 'flex';
 });
-document.getElementById('btn-close-add-modal').addEventListener('click', () => {
-  modalAddOverlay.style.display = 'none';
-});
-modalAddOverlay.addEventListener('click', (e) => {
-  if (e.target === modalAddOverlay) modalAddOverlay.style.display = 'none';
-});
+document.getElementById('btn-close-add-modal').addEventListener('click', () => { modalAddOverlay.style.display = 'none'; });
+modalAddOverlay.addEventListener('click', (e) => { if (e.target === modalAddOverlay) modalAddOverlay.style.display = 'none'; });
 
 // Backup Export/Import
 document.getElementById('btn-export').addEventListener('click', () => {
