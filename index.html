@@ -40,6 +40,7 @@
         <button class="btn-menu" id="btn-menu" aria-label="Abrir menu">&#8942;</button>
         <div class="dropdown" id="dropdown" style="display:none;">
           <button id="btn-open-add">+ Nova Matéria</button>
+          <button id="btn-open-add-crono">+ Novo Evento</button>
           <button id="btn-open-materias">Gerenciar Matérias</button>
           <hr class="dropdown-div">
           <button id="btn-export">Exportar Backup</button>
@@ -67,40 +68,27 @@
 
   <!-- ABA: CRONOGRAMA -->
   <div id="tab-cronograma" class="tab-content">
-    <div class="card-surface form-box" style="flex-direction: column; align-items: stretch; margin-bottom: 20px;">
-      <h3 style="margin-top:0; margin-bottom: 12px; font-family:'Space Grotesk', sans-serif; font-size:16px;">Adicionar Evento</h3>
-      
-      <div class="field" style="margin-bottom: 10px;">
-        <label>Matéria</label>
-        <select id="crono-subject" style="background:var(--surface-2); border:1px solid var(--border); padding:10px; border-radius:10px; color:var(--text-primary); width:100%; font-family: 'Inter';"></select>
+    
+    <!-- Filtros -->
+    <div class="filters-container card-surface" style="padding: 14px; margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 140px;">
+        <label style="font-size: 11px; margin-bottom: 6px; display: block; font-weight: 600;">Matéria</label>
+        <select id="filter-subject" style="width: 100%; padding: 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-primary); font-size: 13px; font-family: 'Inter';">
+          <option value="all">Todas as Matérias</option>
+        </select>
       </div>
-
-      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <div class="field" style="flex: 1;">
-          <label>Data</label>
-          <input type="date" id="crono-date" style="width: 100%;" />
-        </div>
-        <div class="field" style="flex: 1;">
-          <label>Tipo</label>
-          <select id="crono-type" style="background:var(--surface-2); border:1px solid var(--border); padding:10px; border-radius:10px; color:var(--text-primary); width:100%; font-family: 'Inter';">
-            <option value="topico">Tópico de Aula</option>
-            <option value="prova">Prova / Avaliação</option>
-            <option value="trabalho">Trabalho / Exercício</option>
-          </select>
-        </div>
+      <div style="flex: 1; min-width: 140px;">
+        <label style="font-size: 11px; margin-bottom: 6px; display: block; font-weight: 600;">Tipo de Evento</label>
+        <select id="filter-type" style="width: 100%; padding: 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-primary); font-size: 13px; font-family: 'Inter';">
+          <option value="all">Todos os Tipos</option>
+          <option value="topico">Tópicos de Aula</option>
+          <option value="prova">Provas / Avaliações</option>
+          <option value="trabalho">Trabalhos / Exercícios</option>
+        </select>
       </div>
-
-      <div class="field" style="margin-bottom: 14px;">
-        <label>Descrição do Evento</label>
-        <input type="text" id="crono-title" placeholder="ex: Prova 1, Entrega de Lista..." />
-      </div>
-
-      <div id="crono-error" style="color:var(--danger); font-size:12px; margin-bottom:10px; min-height: 14px;"></div>
-      <button class="btn-primary" id="btn-add-crono" style="width: 100%;">Salvar no Calendário</button>
     </div>
 
-    <h3 style="font-family:'Space Grotesk', sans-serif; font-size:16px; margin: 24px 0 12px 0;">Próximos Eventos</h3>
-    <div id="crono-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+    <div id="crono-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
   </div>
 
   <!-- ABA: CALENDÁRIO -->
@@ -153,6 +141,42 @@
       </div>
       <div id="error"></div>
       <button class="btn-primary" id="btn-add" style="width: 100%; margin-top: 8px;">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Adicionar Evento (Cronograma) -->
+<div class="modal-overlay" id="modal-add-crono-overlay" style="display:none;">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h2>Novo Evento</h2>
+      <button class="modal-close" id="btn-close-add-crono-modal" aria-label="Fechar">&times;</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div class="field">
+        <label>Matéria</label>
+        <select id="crono-subject" style="background:var(--surface-2); border:1px solid var(--border); padding:10px; border-radius:10px; color:var(--text-primary); width:100%; font-family: 'Inter';"></select>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <div class="field" style="flex: 1;">
+          <label>Data</label>
+          <input type="date" id="crono-date" style="width: 100%;" />
+        </div>
+        <div class="field" style="flex: 1;">
+          <label>Tipo</label>
+          <select id="crono-type" style="background:var(--surface-2); border:1px solid var(--border); padding:10px; border-radius:10px; color:var(--text-primary); width:100%; font-family: 'Inter';">
+            <option value="topico">Tópico de Aula</option>
+            <option value="prova">Prova / Avaliação</option>
+            <option value="trabalho">Trabalho / Exercício</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Descrição do Evento</label>
+        <input type="text" id="crono-title" placeholder="ex: Prova 1, Entrega de Lista..." />
+      </div>
+      <div id="crono-error" style="color:var(--danger); font-size:12px; min-height: 14px;"></div>
+      <button class="btn-primary" id="btn-add-crono" style="width: 100%; margin-top: 8px;">Salvar no Calendário</button>
     </div>
   </div>
 </div>
