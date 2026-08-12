@@ -178,7 +178,13 @@ button:active { transform: scale(0.96); }
 .detail-info span { font-size: 11px; color: var(--text-secondary); }
 .detail-empty { font-size: 13px; color: var(--text-muted); text-align: center; padding: 10px 0; }
 
-.crono-card { background: var(--surface); border: 1px solid var(--border); padding: 14px; border-radius: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;}
+/* Novos cards do Cronograma com bloco de Data */
+.crono-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; display: flex; overflow: hidden; align-items: stretch; box-shadow: var(--shadow-sm); }
+.crono-date-block { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 68px; background: var(--surface-2); border-right: 1px solid var(--border); padding: 10px 4px; flex-shrink: 0; }
+.crono-date-block .day { font-size: 22px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; line-height: 1; color: var(--text-primary); }
+.crono-date-block .month { font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; margin-top: 4px; }
+.crono-content { padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; flex: 1; gap: 10px; }
+
 .btn-del-crono { background: var(--danger-light); color: var(--danger); font-size: 12px; padding: 6px 12px; border-radius: 99px; border: none; flex-shrink: 0;}
 
 .footer-note { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 32px; }
