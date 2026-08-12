@@ -131,7 +131,7 @@ async function carregarDoFirebase() {
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       subjects = docSnap.data().subjects || [];
-      // Atualiza matérias velhas que não tenham a array de schedule
+      // Garante que matérias antigas tenham o array schedule
       subjects.forEach(s => { if(!s.schedule) s.schedule = []; });
     } else {
       subjects = [];
@@ -170,7 +170,6 @@ function computeStats(s) {
   const pctAusencia = total > 0 ? (faltas / total) * 100 : 0;
   const pctDoLimite = limiteFaltas > 0 ? (faltas / limiteFaltas) * 100 : (faltas > 0 ? 100 : 0);
   
-  // Porcentagem de progresso (aulas dadas em relação ao total previsto)
   const pctProgresso = total > 0 ? (dadas / total) * 100 : 0;
   
   let nivel = 'seguro'; let statusLabel = 'Regular';
@@ -257,22 +256,33 @@ function render() {
 }
 
 // ==========================================
-// 6. ABA DE CRONOGRAMA
+// 6. ABA DE CRONOGRAMA & FILTROS
 // ==========================================
 function renderCronograma() {
-  const select = document.getElementById('crono-subject');
+  const selectModal = document.getElementById('crono-subject');
+  const selectFilter = document.getElementById('filter-subject');
+  const typeFilter = document.getElementById('filter-type');
   const listContainer = document.getElementById('crono-list');
   
-  // Popula o dropdown de seleção
+  // Salva a opção de filtro que já estava selecionada antes de atualizar
+  const currentFilterSub = selectFilter.value;
+  const currentFilterType = typeFilter.value;
+
+  // Popula os selects de matérias (Tanto o do form modal, quanto o do filtro)
   if(subjects.length === 0) {
-    select.innerHTML = '<option value="">Nenhuma matéria cadastrada...</option>';
-    listContainer.innerHTML = '<div class="detail-empty">Nenhum evento agendado.</div>';
+    selectModal.innerHTML = '<option value="">Nenhuma matéria...</option>';
+    selectFilter.innerHTML = '<option value="all">Todas as Matérias</option>';
+    listContainer.innerHTML = '<div class="detail-empty">Nenhuma matéria cadastrada.</div>';
     return;
   }
   
-  select.innerHTML = subjects.map(s => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join('');
+  selectModal.innerHTML = subjects.map(s => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join('');
   
-  // Reúne todos os eventos futuros de todas as matérias
+  // Atualiza o select de Filtro mantendo a seleção atual
+  selectFilter.innerHTML = '<option value="all">Todas as Matérias</option>' + 
+    subjects.map(s => `<option value="${s.id}" ${s.id === currentFilterSub ? 'selected' : ''}>${escapeHTML(s.name)}</option>`).join('');
+  
+  // Reúne os eventos
   let allEvents = [];
   subjects.forEach(sub => {
     if(sub.schedule) {
@@ -282,41 +292,74 @@ function renderCronograma() {
     }
   });
   
-  // Ordena por data (crescente)
-  allEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
-  
-  // Filtra apenas eventos do dia atual em diante
+  // Filtro de Data: Pega apenas de hoje em diante e ordena
   const todayStr = new Date().toISOString().split('T')[0];
-  const upcoming = allEvents.filter(e => e.date >= todayStr);
+  let filteredEvents = allEvents.filter(e => e.date >= todayStr);
+  filteredEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+  
+  // Aplica os filtros selecionados pelo usuário
+  if (currentFilterSub !== 'all' && currentFilterSub !== '') {
+    filteredEvents = filteredEvents.filter(e => e.subjectId === currentFilterSub);
+  }
+  if (currentFilterType !== 'all') {
+    filteredEvents = filteredEvents.filter(e => e.type === currentFilterType);
+  }
 
-  if(upcoming.length === 0) {
-    listContainer.innerHTML = '<div class="detail-empty">Nenhum evento próximo agendado.</div>';
+  // Renderiza a lista
+  if(filteredEvents.length === 0) {
+    listContainer.innerHTML = '<div class="detail-empty" style="margin-top:20px;">Nenhum evento encontrado para estes filtros.</div>';
     return;
   }
 
-  // Gera a lista visual
-  listContainer.innerHTML = upcoming.map(ev => {
-    // Organiza as cores do status
+  const monthNamesShort = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+  listContainer.innerHTML = filteredEvents.map(ev => {
     let iconStr = 'T'; let cls = 'topico';
     if(ev.type === 'prova') { iconStr = '!'; cls = 'prova'; }
     if(ev.type === 'trabalho') { iconStr = '★'; cls = 'trabalho'; }
     
-    // Converte a data para um formato legal
+    // Converte a data para o Bloco de Data (Dia e Mês)
     const [y, m, d] = ev.date.split('-');
-    const dateLabel = new Date(y, m-1, d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+    const dayStr = d;
+    const monthStr = monthNamesShort[parseInt(m, 10) - 1];
 
     return `
       <div class="crono-card">
-        <div class="detail-status ${cls}">${iconStr}</div>
-        <div class="detail-info">
-          <b>${escapeHTML(ev.title)}</b>
-          <span>${escapeHTML(ev.subjectName)} &middot; ${dateLabel}</span>
+        <div class="crono-date-block">
+          <span class="day">${dayStr}</span>
+          <span class="month">${monthStr}</span>
         </div>
-        <button class="btn-del-crono" data-sub="${ev.subjectId}" data-evid="${ev.id}">Apagar</button>
+        <div class="crono-content">
+          <div style="display:flex; align-items:center; gap: 10px; flex: 1; overflow:hidden;">
+            <div class="detail-status ${cls}">${iconStr}</div>
+            <div class="detail-info" style="overflow:hidden; text-overflow:ellipsis;">
+              <b style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(ev.title)}</b>
+              <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(ev.subjectName)}</span>
+            </div>
+          </div>
+          <button class="btn-del-crono" data-sub="${ev.subjectId}" data-evid="${ev.id}">Apagar</button>
+        </div>
       </div>
     `;
   }).join('');
 }
+
+// Escuta as mudanças nos filtros para atualizar a lista instantaneamente
+document.getElementById('filter-subject').addEventListener('change', renderCronograma);
+document.getElementById('filter-type').addEventListener('change', renderCronograma);
+
+// Modal de Adicionar Evento (Cronograma)
+const modalAddCronoOverlay = document.getElementById('modal-add-crono-overlay');
+document.getElementById('btn-open-add-crono').addEventListener('click', (e) => {
+  e.stopPropagation(); dropdown.style.display = 'none'; modalAddCronoOverlay.style.display = 'flex';
+});
+document.getElementById('btn-close-add-crono-modal').addEventListener('click', () => { 
+  modalAddCronoOverlay.style.display = 'none'; 
+});
+modalAddCronoOverlay.addEventListener('click', (e) => { 
+  if (e.target === modalAddCronoOverlay) modalAddCronoOverlay.style.display = 'none'; 
+});
+
 
 // Botão: Salvar no Cronograma
 document.getElementById('btn-add-crono').addEventListener('click', () => {
@@ -338,8 +381,9 @@ document.getElementById('btn-add-crono').addEventListener('click', () => {
     subject.schedule.push({ id: uid(), date: dateVal, type: typeVal, title: titleVal });
     saveSubjects(subjects);
     
-    // Limpa os campos
+    // Limpa campos e esconde Modal
     document.getElementById('crono-title').value = '';
+    modalAddCronoOverlay.style.display = 'none';
     
     showToast('Evento agendado com sucesso!');
     renderCronograma();
@@ -375,11 +419,9 @@ function renderCalendar() {
   const month = currentDate.getMonth();
   monthYearLabel.textContent = `${monthNames[month]} ${year}`;
   
-  // Dicionário gigante agrupando LOGS e EVENTOS DO CRONOGRAMA por dia
   const eventsByDate = {};
   
   subjects.forEach(sub => {
-    // 1. Logs de Presença/Falta
     sub.log.forEach(entry => {
       const d = new Date(entry.date);
       const dateKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -387,10 +429,8 @@ function renderCalendar() {
       eventsByDate[dateKey].push({ source: 'log', subject: sub.name, status: entry.status, time: entry.date });
     });
 
-    // 2. Eventos do Cronograma (Provas, Trabalhos)
     if(sub.schedule) {
       sub.schedule.forEach(ev => {
-        // Date input is YYYY-MM-DD
         if (!eventsByDate[ev.date]) eventsByDate[ev.date] = [];
         eventsByDate[ev.date].push({ source: 'schedule', subject: sub.name, type: ev.type, title: ev.title });
       });
@@ -422,20 +462,15 @@ function renderCalendar() {
       const dotsContainer = document.createElement('div'); dotsContainer.className = 'cal-dots';
       const dayItems = eventsByDate[dateKey];
       
-      // Limite visual: Mostra 3 pontinhos no máximo no calendário
       for (let j = 0; j < Math.min(dayItems.length, 3); j++) {
         const dot = document.createElement('div'); 
-        
-        // Pinta a bolinha dependendo do que for
         if (dayItems[j].source === 'log') {
-          dot.className = `cal-dot ${dayItems[j].status}`; // presente ou falta
+          dot.className = `cal-dot ${dayItems[j].status}`; 
         } else {
-          dot.className = `cal-dot ${dayItems[j].type}`; // prova, trabalho, topico
+          dot.className = `cal-dot ${dayItems[j].type}`; 
         }
-        
         dotsContainer.appendChild(dot);
       }
-      // Se houver mais de 3 eventos no mesmo dia, exibe um ponto cinza "mais"
       if (dayItems.length > 3) {
         const dotMore = document.createElement('div'); dotMore.className = 'cal-dot more'; dotsContainer.appendChild(dotMore);
       }
@@ -469,7 +504,6 @@ function showDayDetails(dateKey, dayItems) {
         const icon = item.status === 'falta' ? '✕' : '✓';
         return `<div class="detail-item"><div class="detail-status ${item.status}">${icon}</div><div class="detail-info"><b>${escapeHTML(item.subject)}</b><span>${item.status === 'falta' ? 'Falta' : 'Presença'} &middot; às ${timeStr}</span></div></div>`;
       } else {
-        // É do Cronograma
         let icon = 'T'; let cls = 'topico'; let typeLabel = 'Tópico de Aula';
         if (item.type === 'prova') { icon = '!'; cls = 'prova'; typeLabel = 'Avaliação'; }
         if (item.type === 'trabalho') { icon = '★'; cls = 'trabalho'; typeLabel = 'Trabalho'; }
@@ -494,7 +528,6 @@ document.getElementById('btn-add').addEventListener('click', () => {
   if (!total || total <= 0) { errEl.textContent = 'Informe o número total de aulas previstas.'; return; }
 
   errEl.textContent = '';
-  // Inicializando a nova estrutura "schedule" na criação
   subjects.push({ id: uid(), name, totalClasses: total, limitPercent: limit, log: [], schedule: [] });
   
   saveSubjects(subjects);
